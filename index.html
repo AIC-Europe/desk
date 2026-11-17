@@ -317,7 +317,8 @@ details.pay12>summary{cursor:pointer;color:var(--muted);font-size:13.5px;padding
     <div id="g-pass">
       <form id="g-form">
         <label for="g-p">团队口令</label>
-        <input id="g-p" type="password" autocomplete="off" required minlength="12" placeholder="请输入团队口令">
+        <input type="text" name="username" autocomplete="username" value="启航工作台（团队口令）" readonly tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
+<input id="g-p" type="password" autocomplete="current-password" required minlength="12" placeholder="请输入团队口令">
         <label class="gcheck"><input id="g-rem" type="checkbox" checked> 在这台设备上记住</label>
         <button type="submit" class="gbtn">进入</button>
       </form>
