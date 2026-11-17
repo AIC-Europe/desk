@@ -280,6 +280,16 @@ table.emp12 td{vertical-align:top;padding-top:10px;padding-bottom:10px}
 table.emp12 td.nw{white-space:nowrap}
 table.emp12 td.nt{min-width:220px;max-width:380px;font-size:13px;color:var(--muted);line-height:1.5}
 table.emp12 .who{margin-top:2px}
+.side nav a.cli{font-weight:600;opacity:.95}
+.side nav a.cli .cn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.side nav a.cli[aria-expanded="true"]{background:var(--side-on);color:#fff;opacity:1;border-left-color:var(--gold)}
+.side .subnav{display:flex;flex-direction:column;gap:1px;margin:2px 0 8px 14px;padding-left:8px;border-left:1px solid var(--side-line)}
+.side .subnav a.sub{padding:7px 10px;font-size:13.5px}
+.side .subnav .morebtn{margin-top:2px;padding:7px 10px;border-top:0;font-size:12.5px}
+.side .grp{padding-top:18px}
+details.adm{margin-top:34px;border-top:1px solid var(--line);padding-top:14px}
+details.adm>summary{cursor:pointer;font-weight:600;color:var(--muted);padding:6px 0}
+details.adm>summary small{font-weight:400;margin-left:8px}
 details.pay12{margin-top:14px}
 details.pay12>summary{cursor:pointer;color:var(--muted);font-size:13.5px;padding:6px 0}
 #gate{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;overflow:auto;background:linear-gradient(160deg,#103328,#0C2A20)}
@@ -1841,6 +1851,7 @@ function setImport(obj){ if(!obj||obj.aic!=='settings'||!obj.cfg||typeof obj.cfg
     if(src.hr&&Array.isArray(src.hr.emps)){ var A=window.AIC; if(A&&A.hrLocked&&A.hrLocked()) hrSkip=true; else { var hh=hrOf(cid), added=0, dt=function(x){ return iso2d(x)?x:''; }, nb=function(x){ return x===''||x==null||isNaN(+x)?'':String(+x); };
         src.hr.emps.slice(0,200).forEach(function(e){ var nm=str(e&&e.name,60), ex=nm&&hh.emps.filter(function(x){ return x.name===nm; })[0]; if(ex&&src.hr.update===true){ var ch=false, put=function(k,v){ if(e[k]!==undefined&&ex[k]!==v){ ex[k]=v; ch=true; } }; put('role',str(e.role,80)); put('start',dt(e.start)); put('end',dt(e.end)); put('probe',dt(e.probe)); put('permit',dt(e.permit)); put('gross',nb(e.gross)); put('vac',nb(e.vac)); put('left',dt(e.left)); put('note',str(e.note,200)); if(ch) added++; return; } if(!nm||ex) return; hh.emps.push({id:rid()+added,name:nm,role:str(e.role,80),start:dt(e.start),end:dt(e.end),probe:dt(e.probe),permit:dt(e.permit),gross:nb(e.gross),vac:nb(e.vac),left:dt(e.left),note:str(e.note,200),drive:safeUrl(str(e.drive,500))}); added++; });
         if(added){ dset('hr',cid,hh); nEmp+=added; if(!hit) n++; } } }
+    if(typeof src.name==='string'&&src.name.trim()&&cfg.name!==src.name.trim().slice(0,40)){ cfg.name=src.name.trim().slice(0,40); hit=true; }
     if(src.lv&&typeof src.lv==='object'&&/^https:\/\/[a-z0-9-]+\.(europe-west1\.firebasedatabase\.app|firebaseio\.com)$/.test(str(src.lv.db,200))&&str(src.lv.salt,80)){ var nv={db:str(src.lv.db,200),salt:str(src.lv.salt,80)}; if(JSON.stringify(cfg.lv||null)!==JSON.stringify(nv)){ cfg.lv=nv; hit=true; } }
     if(Array.isArray(src.done)){ src.done.slice(0,60).forEach(function(k){ var mm=/^cal-([a-z0-9]+)-[a-z]+(_\d)?\.(y\d{4})$/.exec(typeof k==='string'?k:''); if(!mm||mm[1]!==cid||isDone(k)) return; putCheck(k,{p:mm[3],c:cid,by:S.me||S.uid||'',t:Date.now()}); hit=true; }); }
     if(hit){ n++; dset('cfg',cid,cfg); } });
@@ -2067,7 +2078,8 @@ var finPl13=finPl10; finPl10=function(c,d){ if(d&&d.derived){ var h0=finPl13(c,d
 function v13Act(an,id){ if(an!=='fin-del') return false; var cid=route().cid, k='fin-del:'+id; if(!cid) return true; if(S.confirm!==k){ S.confirm=k; render(); return true; } S.confirm=''; finDel(cid,id); return true; }
 /* ===== v14: switch off single service items, go-live date, employee file without leave days where a leave platform is linked ===== */
 var refreshData14=refreshData;
-refreshData=function(){ refreshData14(); DATA.forEach(function(c){ var sv=(DOCS.cfg[c.id]||{}).svc||{}; if(c.tasks.some(function(t){ return (sv[t.id]||{}).off; })) c.tasks=c.tasks.filter(function(t){ return !(sv[t.id]||{}).off; }); }); };
+refreshData=function(){ refreshData14(); DATA.forEach(function(c){ var cf=DOCS.cfg[c.id]||{}, sv=cf.svc||{}; if(c.tasks.some(function(t){ return (sv[t.id]||{}).off; })) c.tasks=c.tasks.filter(function(t){ return !(sv[t.id]||{}).off; }); if(typeof cf.name==='string'&&cf.name) c.name=cf.name; });
+  DATA.sort(function(a,b){ return String(a.name).localeCompare(String(b.name),'en',{sensitivity:'base'}); }); };
 function goLive(){ return iso2d((DOCS.cfg._team||{}).start); }
 var allItems14=allItems;
 allItems=function(cid){ var s=goLive(), l=allItems14(cid); return s?l.filter(function(it){ return it.done||it.due>=s||it.type==='exp'||it.ltr||it.inb; }):l; };
@@ -2094,6 +2106,26 @@ viewHome=function(){ var h=viewHome14b(), A=window.AIC; if(!A||!A.backup) return
     return h; }
   if(!isLead()||(b.days>=0&&b.days<7)) return h;
   return box('<b>该备份了：</b>'+lastTxt+'导出的备份文件请存到钉钉云盘。'+btn)+h; };
+/* ===== v15: clients always listed in the sidebar; home page shows only today's work, settings folded away ===== */
+sideHtml=function(r){ var h='<a class="brand" href="#home"><span class="mark" aria-hidden="true">启</span><span class="bt"><b>启航国际咨询</b><small>团队工作台</small></span></a>';
+  var all=allItems(''), late={}, soon={}, od=0; all.forEach(function(it){ if(it.done) return; if(it.days<0){ late[it.cid]=(late[it.cid]||0)+1; od++; } else if(it.days<=7) soon[it.cid]=(soon[it.cid]||0)+1; });
+  h+='<nav aria-label="主导航"><a href="#home"'+(!r.cid&&!r.tab?' aria-current="page"':'')+'>今日工作</a><a href="#deadlines"'+(!r.cid&&r.tab==='due'?' aria-current="page"':'')+'>期限总览'+(od?'<span class="num hot" title="已逾期">'+od+'</span>':'')+'</a><a href="#inbox"'+(!r.cid&&r.tab==='inbox'?' aria-current="page"':'')+'>新任务收件箱'+(inbAll()?'<span class="num hot" title="未完成">'+inbAll()+'</span>':'')+'</a></nav>';
+  h+='<div class="grp">客户</div><nav aria-label="客户">';
+  DATA.forEach(function(c){ var on=r.cid===c.id, l=late[c.id]||0, s=soon[c.id]||0;
+    h+='<a class="cli" href="#'+c.id+'"'+(on?' aria-expanded="true"':'')+(on&&NAV_MAIN.indexOf(r.tab)<0&&NAV_MORE.indexOf(r.tab)<0?' aria-current="page"':'')+' title="'+esc(c.full||c.name)+'"><span class="cn">'+esc(c.name)+'</span>'+(l?'<span class="num hot" title="已逾期 '+l+' 项">'+l+'</span>':s?'<span class="num" title="7 天内到期 '+s+' 项">'+s+'</span>':'')+'</a>';
+    if(!on) return;
+    var TN={}, badge=function(k){ var a; if(k==='open'){ a=riskList(c).filter(function(x){return !isDone(x.id+'.x');}).length; return [a,false]; } if(k==='inb') return [inbOpen(c.id).length,true]; if(k==='ltr') return [((DOCS.ops[c.id]||{}).ltr||[]).filter(function(x){return x.st===LST[0];}).length,true]; if(k==='tax') return [taxOpen(c.id),true]; return [0,false]; },
+      link=function(k){ var b=badge(k); return '<a class="sub" href="#'+c.id+(k?'-'+k:'')+'"'+(k===r.tab?' aria-current="page"':'')+'>'+TN[k]+(b[0]?'<span class="num'+(b[1]?' hot':'')+'">'+b[0]+'</span>':'')+'</a>'; };
+    TABS.forEach(function(x){TN[x[0]]=x[1];});
+    var inMore=NAV_MORE.indexOf(r.tab)>=0, open=S.more||inMore, hot=0; NAV_MORE.forEach(function(k){ var b=badge(k); if(b[1]) hot+=b[0]; });
+    h+='<div class="subnav">'+NAV_MAIN.map(link).join('')+'<button type="button" class="morebtn" data-act="more" aria-expanded="'+(open?'true':'false')+'">更多'+(!open&&hot?'<span class="num hot">'+hot+'</span>':'<span class="arr" aria-hidden="true">'+(open?'▾':'▸')+'</span>')+'</button>'+(open?NAV_MORE.map(link).join(''):'')+'</div>'; });
+  h+='</nav>';
+  return h+'<div class="foot">'+(S.me?'<div style="margin-bottom:6px">当前：<b style="color:var(--side-text)">'+esc(S.me)+'</b> · <button type="button" class="lnk" data-act="switch-me" style="color:var(--side-muted)">切换</button>'+(window.AIC?' · <button type="button" class="lnk" data-act="logout" style="color:var(--side-muted)">退出</button>':'')+'</div>':'')+'仅供启航内部使用</div>'; };
+function homeWrap(h){ h=h.replace('<p class="lead">先看今天要处理的事，再进各家客户。</p>','<p class="lead">这里是今天要处理的事。客户在左边，点哪家进哪家。</p>'); var a=h.indexOf('<h2>客户 '), keys=['<h2>新增客户','<h2>导入设置文件','<h2>启用日期','<h2>数据备份','<h2>团队成员'], b=-1; keys.forEach(function(k){ var i=h.indexOf(k); if(i>=0&&(b<0||i<b)) b=i; });
+  if(a>=0){ var e=h.indexOf('<h2>',a+4); if(e<0) e=h.length; h=h.slice(0,a)+h.slice(e); if(b>a) b-=(e-a); }
+  if(b>=0) h=h.slice(0,b)+'<details class="adm"'+(S.admOpen?' open':'')+'><summary>设置 <small>新增客户、导入设置文件、启用日期和每周备份、数据备份、团队成员</small></summary>'+h.slice(b)+'</details>';
+  return h; }
+document.addEventListener('toggle',function(e){ if(e.target&&e.target.classList&&e.target.classList.contains('adm')) S.admOpen=e.target.open; },true);
 function render(){
   refreshData();
   var r=route(), app=document.getElementById('app'), d=S.now, wk=isoWeek(d), dd=d.getDate(), L=lastDay(d);
@@ -2101,7 +2133,7 @@ function render(){
   var act=document.activeElement, refocus=act&&(act.id==='adhoc-input'||act.id==='fin-q'||act.id==='mail-q'||act.id==='rej-note'||act.id==='inbf-val'||/^asg-(title|sum|files)$/.test(act.id||'')||/^inb-/.test(act.id||'')&&act.type!=='file'&&act.tagName!=='SELECT'&&act.type!=='date'), rfid=refocus?act.id:'', pos=refocus?act.selectionStart:0, fid=act&&act.id&&!refocus?act.id:'', fx=act&&act.getAttribute?act.getAttribute('data-x'):'';
   var h='';
   document.getElementById('side').innerHTML=sideHtml(r);
-  if(!r.cid){ h=r.tab==='due'?viewDeadlines():r.tab==='inbox'?viewInbox():viewHome(); document.title=(r.tab==='due'?'期限总览 · ':r.tab==='inbox'?'新任务收件箱 · ':'')+'启航团队工作台'; }
+  if(!r.cid){ h=r.tab==='due'?viewDeadlines():r.tab==='inbox'?viewInbox():homeWrap(viewHome()); document.title=(r.tab==='due'?'期限总览 · ':r.tab==='inbox'?'新任务收件箱 · ':'')+'启航团队工作台'; }
   else { var c=BYID[r.cid], tn=TABS.filter(function(x){return x[0]===r.tab;})[0][1]; document.title=c.name+' · '+tn+' · 启航客户工作台';
     h='<div class="crumb"><a href="#home">今日工作</a> / <a href="#'+c.id+'">'+esc(c.name)+'</a> / '+tn+'</div><h1>'+tn+'</h1><p class="sub">'+esc(c.full)+(c.city?' · '+esc(c.city):'')+(c.desc?' · '+esc(c.desc):'')+'</p>'+ddLinks(c);
     h+=viewFor(r.tab)(c); }
