@@ -1826,7 +1826,7 @@ function viewTax(c){ var n=d0(S.now), y=n.getFullYear(), obl=oblItems(c.id).sort
 /* settings file: lets the lead load prepared settings instead of clicking through every client */
 function calClean(m){ var o={}; CAL.forEach(function(d){ var x=(m||{})[d[0]]; if(!x||typeof x!=='object') return; var r={on:x.on==='y'||x.on==='n'?x.on:''}; if(d[2].indexOf(x.freq)>=0) r.freq=x.freq; if(typeof x.opt==='boolean') r.opt=x.opt; if(typeof x.who==='string') r.who=x.who.slice(0,20); o[d[0]]=r; }); return o; }
 function setImport(obj){ if(!obj||obj.aic!=='settings'||!obj.cfg||typeof obj.cfg!=='object'){ toast('这不是工作台的设置文件'); return; } var n=0, nEmp=0, hrSkip=false;
-  if(obj.team&&typeof obj.team==='object'&&iso2d(obj.team.start)&&(DOCS.cfg._team||{}).start!==obj.team.start){ var tt=clone(DOCS.cfg._team); if(!Array.isArray(tt.members)) tt.members=team(); tt.start=obj.team.start; dset('cfg','_team',tt); n++; }
+  if(obj.team&&typeof obj.team==='object'){ var tt=clone(DOCS.cfg._team), tch=false; if(!Array.isArray(tt.members)) tt.members=team(); if(iso2d(obj.team.start)&&tt.start!==obj.team.start){ tt.start=obj.team.start; tch=true; } if(typeof obj.team.backupBy==='string'&&tt.members.indexOf(obj.team.backupBy)>=0&&tt.backupBy!==obj.team.backupBy){ tt.backupBy=obj.team.backupBy; tch=true; } if(tch){ dset('cfg','_team',tt); n++; } }
   Object.keys(obj.cfg).forEach(function(cid){ if(!BYID[cid]) return; var src=obj.cfg[cid]||{}, cfg=clone(DOCS.cfg[cid]), hit=false, c1, cur;
     if(src.cal){ cur=calOf(cid,null); c1=calClean(src.cal); Object.keys(c1).forEach(function(k){ cur[k]=Object.assign({},cur[k],c1[k]); delete cur[k].def; }); cfg.cal=cur; delete cfg.obl; DOCS.cfg[cid]=cfg; hit=true; }
     if(src.calE&&typeof src.calE==='object'){ var ce=clone(cfg.calE); Object.keys(src.calE).forEach(function(nm){ var e=-1; (BYID[cid].reg||[]).forEach(function(r,i){ if(r.name===nm) e=i; }); if(e<0||entsOf(cid)[0]==null) return; cur=calOf(cid,e); c1=calClean(src.calE[nm]); Object.keys(c1).forEach(function(k){ cur[k]=Object.assign({},cur[k],c1[k]); delete cur[k].def; }); ce[e]=cur; hit=true; }); cfg.calE=ce; }
@@ -2072,20 +2072,27 @@ var allItems14=allItems;
 allItems=function(cid){ var s=goLive(), l=allItems14(cid); return s?l.filter(function(it){ return it.done||it.due>=s||it.type==='exp'||it.ltr||it.inb; }):l; };
 var viewHome14=viewHome;
 viewHome=function(){ var h=viewHome14(); if(S.readonly||(window.AIC&&!isLead())) return h;
-  var x='<h2>启用日期 <small>这一天之前到期、还没打勾的例行工作和节点不再显示为逾期</small></h2><form class="add" data-form="golive" style="align-items:end"><label>从哪一天开始用工作台<input name="start" type="date" value="'+esc((DOCS.cfg._team||{}).start||'')+'"></label><button type="submit">保存</button></form>', j=h.indexOf('<h2>团队成员');
+  var x='<h2>启用日期和每周备份 <small>启用日期之前到期、还没打勾的例行工作和节点不再显示为逾期；备份负责人每周五会在首页看到备份提醒</small></h2><form class="add" data-form="golive" style="align-items:end"><label>从哪一天开始用工作台<input name="start" type="date" value="'+esc((DOCS.cfg._team||{}).start||'')+'"></label><label>每周五备份负责人'+sel('backupBy',[['','不指定（只提醒负责人）']].concat(team().map(function(n){return [n,n];})),backupBy())+'</label><button type="submit">保存</button></form>', j=h.indexOf('<h2>团队成员');
   return j>=0?h.slice(0,j)+x+h.slice(j):h+x; };
 function formSubmit14(name,fv,f){
-  if(name==='golive'){ var t=clone(DOCS.cfg._team); if(!Array.isArray(t.members)) t.members=team(); if(iso2d(fv.start)) t.start=fv.start; else delete t.start; toast('已保存'); return dset('cfg','_team',t); }
-  if(name==='team'){ var keep=(DOCS.cfg._team||{}).start, r=formSubmit12(name,fv,f); if(keep&&DOCS.cfg._team&&!DOCS.cfg._team.start){ var t2=clone(DOCS.cfg._team); t2.start=keep; dset('cfg','_team',t2); } return r; }
+  if(name==='golive'){ var t=clone(DOCS.cfg._team); if(!Array.isArray(t.members)) t.members=team(); if(iso2d(fv.start)) t.start=fv.start; else delete t.start; if(team().indexOf(fv.backupBy)>=0) t.backupBy=fv.backupBy; else delete t.backupBy; toast('已保存'); return dset('cfg','_team',t); }
+  if(name==='team'){ var keep=(DOCS.cfg._team||{}).start, kb=(DOCS.cfg._team||{}).backupBy, r=formSubmit12(name,fv,f); if((keep||kb)&&DOCS.cfg._team&&!DOCS.cfg._team.start&&!DOCS.cfg._team.backupBy){ var t2=clone(DOCS.cfg._team); if(keep) t2.start=keep; if(kb) t2.backupBy=kb; dset('cfg','_team',t2); } return r; }
   return formSubmit12(name,fv,f); }
 var hrEmp14=hrEmp12;
 hrEmp12=function(c,h){ var s=hrEmp14(c,h); if(!lvCfg(c.id)) return s;
   s=s.replace('<th class="n">年假</th>','').replace(/<td class="n">[^<]*<\/td><td class="nt">/g,'<td class="nt">').replace(/<label>年假天数<input[^>]*><\/label>/,'');
   return s+'<p class="who" style="margin-top:8px">这家客户的年假天数和休假记录在休假平台里管理，这里不再重复登记，见“休假与病假”。</p>'; };
-/* backup reminder at the top of the home page when the last backup is a week old or missing */
+/* weekly backup: one team member is responsible every Friday; reminder at the top of the home page */
+function backupBy(){ var b=(DOCS.cfg._team||{}).backupBy; return team().indexOf(b)>=0?b:''; }
+function backupDue(){ var last=(DOCS.cfg._backup||{}).t||0, n=d0(S.now), fri=new Date(n); fri.setDate(n.getDate()-((n.getDay()+2)%7)); return {last:last,fri:fri,due:!last||last<fri.getTime(),late:n>fri,days:last?Math.floor((Date.now()-last)/864e5):-1}; }
 var viewHome14b=viewHome;
-viewHome=function(){ var h=viewHome14b(), A=window.AIC; if(!A||!A.backup||!isLead()) return h; var last=(DOCS.cfg._backup||{}).t||0, days=last?Math.floor((Date.now()-last)/864e5):-1; if(days>=0&&days<7) return h;
-  return '<div class="note" style="margin-bottom:16px"><p><b>该备份了：</b>'+(days<0?'工作台的数据还没有备份过。':'上次备份是 '+days+' 天前。')+'导出的备份文件请存到钉钉云盘。 <button type="button" class="mini" data-act="backup">导出备份</button></p></div>'+h; };
+viewHome=function(){ var h=viewHome14b(), A=window.AIC; if(!A||!A.backup) return h; var who=backupBy(), b=backupDue(), btn=' <button type="button" class="mini" data-act="backup">导出备份</button>', box=function(t){ return '<div class="note" style="margin-bottom:16px"><p>'+t+'</p></div>'; }, lastTxt=b.days<0?'工作台的数据还没有备份过。':'上次备份是 '+b.days+' 天前'+((DOCS.cfg._backup||{}).by?'（'+esc(DOCS.cfg._backup.by)+'）':'')+'。';
+  if(who){ if(!b.due) return h;
+    if(S.me===who) return box('<b>每周五的工作台备份该做了。</b>'+lastTxt+'点右边的按钮导出，把下载的文件存到钉钉云盘。'+btn)+h;
+    if(isLead()&&b.late) return box('<b>'+esc(who)+' 本周五的工作台备份还没有做。</b>'+lastTxt+'可以提醒一下，或者自己导出。'+btn)+h;
+    return h; }
+  if(!isLead()||(b.days>=0&&b.days<7)) return h;
+  return box('<b>该备份了：</b>'+lastTxt+'导出的备份文件请存到钉钉云盘。'+btn)+h; };
 function render(){
   refreshData();
   var r=route(), app=document.getElementById('app'), d=S.now, wk=isoWeek(d), dd=d.getDate(), L=lastDay(d);
