@@ -2198,8 +2198,10 @@ function badge15(c,k){ if(k==='open') return riskList(c).filter(function(x){retu
 var side14=sideHtml; sideHtml=function(r){ var h=side14(r), td={}; allItems('').forEach(function(it){ if(!it.done&&it.days===0) td[it.cid]=(td[it.cid]||0)+1; });
   h=h.replace(/(<a class="cli" href="#([a-z0-9_-]+)"(?:(?!<\/a>)[\s\S])*?)<span class="num" title="7 天内到期 \d+ 项">\d+<\/span>/g,function(m,pre,cid){ return pre+(td[cid]?'<span class="num" title="今天到期 '+td[cid]+' 项">'+td[cid]+'</span>':''); });
   if(!r.cid||!BYID[r.cid]) return h; var c=BYID[r.cid], i=h.indexOf('<div class="subnav">'), j=i<0?-1:h.indexOf('</div>',i); if(i<0||j<0) return h;
+  if(S.fold15===c.id) return (h.slice(0,i)+h.slice(j+6)).replace('href="#'+c.id+'" aria-expanded="true"','href="#'+c.id+'" aria-expanded="false"');
   var grp=r.tab===''?'':(r.tab==='tax'||r.tab==='due')?'tax':r.tab==='fin'?'fin':r.tab==='hr'?'hr':'info', L=[['','工作',0],['tax','期限',taxOpen(c.id)]]; if(has15(c,'fin')||grp==='fin') L.push(['fin','财务',0]); if(has15(c,'hr')||grp==='hr') L.push(['hr','人事',0]); L.push(['info','资料',badge15(c,'inb')+badge15(c,'ltr')]);
   return h.slice(0,i)+'<div class="subnav">'+L.map(function(x){ return '<a class="sub" href="#'+c.id+(x[0]?'-'+x[0]:'')+'"'+(x[0]===grp?' aria-current="page"':'')+'>'+x[1]+(x[2]?'<span class="num hot">'+x[2]+'</span>':'')+'</a>'; }).join('')+h.slice(j); };
+document.addEventListener('click',function(e){ var a=e.target.closest&&e.target.closest('#side a.cli'); if(!a) return; var cid=(a.getAttribute('href')||'').slice(1); if(route().cid===cid){ e.preventDefault(); S.fold15=S.fold15===cid?'':cid; render(); } else S.fold15=''; },true);
 var EG15=[['记账',/台账|记账|内部账|发票|账务/],['物流',/物流|发货|仓库|运输/],['人事',/报销|休假|工资|工时|打卡|人事|Deel/i]];
 function egrp15(l){ if(l.grp) return l.grp; for(var i=0;i<EG15.length;i++) if(EG15[i][1].test(l.name||'')) return EG15[i][0]; return '其他'; }
 function tip15(s){ s=String(s||'').split(/[；;。\n]/)[0].trim(); return s.length>36?s.slice(0,35)+'…':s; }
@@ -2209,8 +2211,8 @@ ddLinks=function(c){ if(route().tab!=='') return '';
   var card=function(name,url,tip,tag){ var u=safeUrl(url), tg=tag?'<span class="etag">'+esc(tag)+'</span>':''; return u?'<a class="ecard" href="'+esc(u)+'" target="_blank" rel="noopener noreferrer">'+tg+'<b>'+esc(name)+' ↗</b>'+(tip?'<small>'+esc(tip)+'</small>':'')+'</a>':'<span class="ecard off">'+tg+'<b>'+esc(name)+'</b><small>'+esc(tip||'没有网址')+'</small></span>'; };
   var gs=[]; ls.forEach(function(l){ var g=egrp15(l); if(gs.indexOf(g)<0) gs.push(g); }); var tagOn=ls.length+dd.length>4&&gs.length>1, G={}, ord=[]; ls.forEach(function(l){ var g=egrp15(l); if(!G[g]){ G[g]=[]; ord.push(g); } G[g].push(card(l.name,l.url,tip15(l.note),tagOn?g:'')); }); if(dd.length){ G['钉钉群']=dd.map(function(g){ return card(g.name,g.url,'打开钉钉群',tagOn?'钉钉群':''); }); ord.push('钉钉群'); }
   return '<div class="entry15"><div class="ecards">'+ord.map(function(g){ return G[g].join(''); }).join('')+'</div></div>'; };
-var work14=viewWork; viewWork=function(c){ if(S.own15===undefined){ S.own15=1; if(S.me&&team().indexOf(S.me)>=0) S.own=S.me; }
-  var B=wkBuckets(c), me=S.me&&team().indexOf(S.me)>=0?S.me:'', opts=(me?[[me,'我的']]:[]).concat([['','全部']]).concat(team().filter(function(n){return n!==me;}).map(function(n){return [n,n];}));
+var work14=viewWork; viewWork=function(c){
+  var B=wkBuckets(c), me=S.me&&team().indexOf(S.me)>=0?S.me:'', opts=[['','全部']].concat(me?[[me,'我的']]:[]).concat(team().filter(function(n){return n!==me;}).map(function(n){return [n,n];}));
   var h='<div class="filters" role="group" aria-label="按执行人筛选">'+opts.map(function(o){ return '<button data-own="'+esc(o[0])+'" aria-pressed="'+(S.own===o[0]?'true':'false')+'">'+esc(o[1])+'</button>'; }).join('')+'</div><div class="wk15">';
   if(B.late.length) h+='<h2>逾期 <small>过了期限还没完成，优先处理</small></h2><ul class="tasks">'+B.late.map(function(i){return wkRow(i,c.id);}).join('')+'</ul>';
   h+=wkSec('本周要做的','今天和本周内到期',B.today.concat(B.week),c.id,'本周没有要做的工作。');
