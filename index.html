@@ -2034,28 +2034,49 @@ parseKB=function(R){ var accts=[], cur=null, ix=null, find=function(h,names){ fo
     if(!cur) continue; var x=ix||{gk:3,tx:4,bl:6,so:7,ha:8,st:12,bu:2}, g=function(k){ return x[k]>=0?r[x[k]]:null; };
     cur.rows.push([fdate(r[0]),fstr(g('gk')),fstr(g('tx')),fstr(g('bl')),fnum(g('so')),fnum(g('ha')),fstr(g('st')),fstr(g('bu'))]); }
   return accts.filter(function(a){ return a.rows.length; }); };
+/* v16: monthly ledgers (Monatskonto) are appended to the year; the month follows the firm's booking period (Stapel-Nr.), the document date stays in the text */
+function ledMonOf(kb){ var c={}; kb.forEach(function(a){ a.rows.forEach(function(r){ var m=/^(\d\d)-(\d{4})/.exec(r[6]||''); if(m&&+m[1]>=1&&+m[1]<=12){ var k=m[2]+'-'+m[1]; c[k]=(c[k]||0)+1; } }); }); var k=Object.keys(c).sort(function(a,b){ return c[b]-c[a]; })[0];
+  if(!k){ var mx=''; kb.forEach(function(a){ a.rows.forEach(function(r){ var d=String(r[0]), s=d.slice(6,10)+'-'+d.slice(3,5); if(/^\d{4}-\d\d$/.test(s)&&s>mx) mx=s; }); }); k=mx; }
+  return k?{y:+k.slice(0,4),m:+k.slice(5,7)}:null; }
+function ledShiftRow(r,y,m){ var g=parseInt(r[1],10), mm=(g>=9000&&g<=9009)?1:m, d=String(r[0]); if(!/^\d\d\.\d\d\.\d{4}$/.test(d)) return; if(+d.slice(3,5)===mm&&+d.slice(6,10)===y) return; if(!/^\[\d\d\.\d\d\.\]/.test(r[2]||'')) r[2]='['+d.slice(0,6)+'] '+(r[2]||''); r[0]='01.'+pad(mm)+'.'+y; }
+function ledShiftYear(accts,y){ accts.forEach(function(a){ a.rows.forEach(function(r){ var m=/^(\d\d)-(\d{4})/.exec(r[6]||''); if(m&&+m[2]===y&&+m[1]>=1&&+m[1]<=12) ledShiftRow(r,y,+m[1]); }); }); }
+function ledMarked(accts){ return accts.some(function(a){ return a.rows.some(function(r){ return /^\[\d\d\.\d\d\.\]/.test(r[2]||''); }); }); }
+function ledPerMode(cid){ return ledYears(cid).some(function(y){ return !!(FIN.docs[ledId(cid,y)]||{}).per; }); }
+function ledMerge(base,add,y,m){ var out=[], ix={}; (base||[]).forEach(function(a){ var o={no:a.no,name:a.name,rows:a.rows.filter(function(r){ var d=String(r[0]); return !(+d.slice(6,10)===y&&+d.slice(3,5)===m); })}; ix[o.no]=o; out.push(o); });
+  add.forEach(function(a){ var o=ix[a.no]; if(!o){ o=ix[a.no]={no:a.no,name:a.name,rows:[]}; out.push(o); } if(a.name) o.name=a.name; o.rows=o.rows.concat(a.rows); });
+  out=out.filter(function(a){ return a.rows.length; }); out.sort(function(a,b){ return parseInt(a.no,10)-parseInt(b.no,10); }); return out; }
 finRead=function(files,cid){ FIN.busy='正在读取文件…'; render();
   loadXlsx().then(function(){ return Promise.all(Array.prototype.map.call(files,function(f){ return f.arrayBuffer().then(function(b){ return {name:f.name,wb:XLSX.read(b,{type:'array'})}; }); })); })
   .then(function(list){ var p={cid:cid,files:[],found:[],period:'',title:'',led:[]};
     list.forEach(function(x){ p.files.push(x.name); x.wb.SheetNames.forEach(function(sn){ var R=XLSX.utils.sheet_to_json(x.wb.Sheets[sn],{header:1,raw:true,defval:null}); var t=fstr((R[0]||[])[0]);
       if(/Kontoblatt/i.test(t)){ var kb=parseKB(R), cnt={}, n=0; kb.forEach(function(a){ a.rows.forEach(function(r){ var k=String(r[0]).slice(6,10)+'-'+String(r[0]).slice(3,5); cnt[k]=(cnt[k]||0)+1; n++; }); });
         var ks=Object.keys(cnt).filter(function(k){ return /^\d{4}-\d\d$/.test(k); }), ys={}; ks.forEach(function(k){ ys[k.slice(0,4)]=(ys[k.slice(0,4)]||0)+cnt[k]; }); var yr=Object.keys(ys).sort(function(a,b){ return ys[b]-ys[a]; })[0];
-        if(yr&&(/Jahreskonto/i.test(t)||ks.length>1)){ p.led=p.led.filter(function(l){ return l.year!==+yr; }); p.led.push({year:+yr,accts:kb,n:n,file:x.name}); p.found.push(yr+' 年全年明细账：'+kb.length+' 个科目，'+n+' 笔分录'); }
+        var mo=/Monatskonto/i.test(t)?ledMonOf(kb):null;
+        if(mo){ kb.forEach(function(a){ a.rows.forEach(function(r){ ledShiftRow(r,mo.y,mo.m); }); }); p.ledm=(p.ledm||[]).filter(function(l){ return !(l.year===mo.y&&l.month===mo.m); }); p.ledm.push({year:mo.y,month:mo.m,accts:kb,n:n,file:x.name}); p.found.push(mo.y+' 年 '+mo.m+' 月明细账（追加到 '+mo.y+' 年的账里，只替换这一个月）：'+kb.length+' 个科目，'+n+' 笔分录'); }
+        else if(yr&&(/Jahreskonto/i.test(t)||ks.length>1)){ var pm=ledMarked(kb)||ledPerMode(cid); if(pm) ledShiftYear(kb,+yr); p.led=p.led.filter(function(l){ return l.year!==+yr; }); p.led.push({year:+yr,accts:kb,n:n,file:x.name,per:pm?1:0}); p.found.push(yr+' 年全年明细账：'+kb.length+' 个科目，'+n+' 笔分录'+(pm?'（按事务所记账期间归月）':'')); }
         else { p.kb=kb; p.found.push('明细账：'+kb.length+' 个科目，'+n+' 笔分录'); if(!p.period) p.period=guessPeriod('',kb); } }
       else if(/BWA/i.test(t)){ p.bwa=parseBWA(R); p.title=t; p.found.push('BWA：'+p.bwa.length+' 行'); p.period=guessPeriod(t)||p.period; }
       else if(/Summen- und Saldenliste/i.test(t)){ p.susa=parseSuSa(R); p.found.push('科目余额表：'+p.susa.length+' 个科目'); if(!p.title) p.title=t; }
       else if(/Umsatzsteuer-Voranmeldung/i.test(t)){ p.ust=parseUSt(R); p.found.push('增值税预申报：'+p.ust.length+' 行'); if(!p.period) p.period=guessPeriod(t); } }); });
-    p.mon=!!(p.kb||p.bwa||p.susa||p.ust); FIN.busy=''; if(!p.found.length){ toast('没有识别出 DATEV 的明细账、BWA、科目余额表或增值税预申报。'); FIN.pend=null; } else FIN.pend=p; render(); })
+    p.mon=!!(p.kb||p.bwa||p.susa||p.ust); FIN.busy=''; if(p.ledm&&p.ledm.length&&p.led.some(function(l){ return p.ledm.some(function(q){ return q.year===l.year; }); })){ p.found.push('同一年既选了全年明细账又选了单月明细账：先导入全年的，单月的这次不处理'); p.ledm=p.ledm.filter(function(q){ return !p.led.some(function(l){ return l.year===q.year; }); }); } if(!p.found.length){ toast('没有识别出 DATEV 的明细账、BWA、科目余额表或增值税预申报。'); FIN.pend=null; } else FIN.pend=p; render(); })
   .catch(function(){ FIN.busy=''; toast('文件读取失败。请确认是事务所导出的 Excel 文件。'); render(); }); };
 var finCommit13=finCommit;
-finCommit=function(){ var p=FIN.pend; if(!p) return; if(!p.led||!p.led.length) return finCommit13();
+finCommit=function(){ var p=FIN.pend; if(!p) return;
+  if(p.ledm&&p.ledm.length){ var c0=p.cid, ys={}, wait=false; p.ledm.forEach(function(l){ ys[l.year]=1; }); Object.keys(ys).forEach(function(y){ var id=ledId(c0,+y); if(FIN.docs[id]&&FIN.docs[id].ledger&&LED.load[id]!==2) wait=true; });
+    if(wait){ ledSync(c0); toast('这一年已有的明细账还在读取，请过几秒再点确认。'); return; }
+    Object.keys(ys).forEach(function(y){ y=+y; var id=ledId(c0,y), old=FIN.docs[id]||{}, base=LED.yr[id]?LED.yr[id].map(function(a){ return {no:a.no,name:a.name,rows:a.rows.map(function(r){ return r.slice(); })}; }):[], files=(old.files||[]).slice(), n=0;
+      if(base.length&&!old.per) ledShiftYear(base,y);
+      p.ledm.filter(function(l){ return l.year===y; }).sort(function(a,b){ return a.month-b.month; }).forEach(function(l){ base=ledMerge(base,l.accts,y,l.month); if(files.indexOf(l.file)<0) files.push(l.file); });
+      base.forEach(function(a){ n+=a.rows.length; }); p.led=(p.led||[]).filter(function(l){ return l.year!==y; }); p.led.push({year:y,accts:base,n:n,file:files[files.length-1],files:files.slice(-14),per:1}); });
+    p.ledMsg='已追加 '+p.ledm.map(function(l){ return l.year+' 年 '+l.month+' 月'; }).join('、')+'明细账'; p.ledm=null; }
+  if(!p.led||!p.led.length) return finCommit13();
   if(p.mon){ var per=(document.getElementById('fin-period')||{}).value||p.period; if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(per)){ toast('期间请写成 2026-10 这样的格式。'); return; } }
   var cid=p.cid, led=p.led, w=[], rest=p.mon?Object.assign({},p,{led:[]}):null;
-  led.forEach(function(l){ var id=ledId(cid,l.year), old=FIN.docs[id]||{}, chunks=kbChunks(l.accts), doc={cid:cid,period:'L'+l.year,ledger:true,year:l.year,kbn:chunks.length,na:l.accts.length,nr:l.n,at:Date.now(),files:[l.file]};
+  led.forEach(function(l){ var id=ledId(cid,l.year), old=FIN.docs[id]||{}, chunks=kbChunks(l.accts), doc={cid:cid,period:'L'+l.year,ledger:true,year:l.year,kbn:chunks.length,na:l.accts.length,nr:l.n,at:Date.now(),files:l.files||[l.file]}; if(l.per) doc.per=1;
     LED.yr[id]=l.accts; LED.load[id]=2; LED.at=LED.at||{}; LED.at[id]=doc.at; FIN.docs[id]=doc;
     if(S.mode==='db'){ w.push(S.db.doc('fin/'+id).set(doc)); chunks.forEach(function(c,i){ w.push(S.db.doc('finkb/'+id+'.'+i).set({accts:c})); }); for(var i=chunks.length;i<(old.kbn||0);i++) w.push(S.db.doc('finkb/'+id+'.'+i).delete()); } });
   ledBuild(cid); ledInject(cid); var ps=finPeriods13(cid).filter(function(x){ return /^\d{4}-\d\d$/.test(x); }); if(ps.length) FIN.per[cid]=ps[0]; FIN.tab='ov'; FIN.gran='y';
-  var done=function(){ FIN.busy=''; toast('已导入 '+led.map(function(l){ return l.year+' 年'; }).join('、')+'明细账'); if(rest){ FIN.pend=rest; finCommit13(); } else { FIN.pend=null; render(); } };
+  var done=function(){ FIN.busy=''; toast(p.ledMsg||('已导入 '+led.map(function(l){ return l.year+' 年'; }).join('、')+'明细账')); if(rest){ FIN.pend=rest; finCommit13(); } else { FIN.pend=null; render(); } };
   if(S.mode!=='db'){ FIN.pend=null; return done(); }
   FIN.busy='正在保存明细账，分录多的年份需要一点时间…'; FIN.pend=null; render();
   Promise.all(w).then(done).catch(function(e){ FIN.busy=''; writeFail(e); render(); }); };
@@ -2064,7 +2085,7 @@ function finDel(cid,pid){ var id=cid+'.'+pid, d=FIN.docs[id]; if(!d) return; var
   if(S.mode==='db'){ w.push(S.db.doc('fin/'+id).delete()); for(var i=0;i<n;i++) w.push(S.db.doc('finkb/'+id+'.'+i).delete()); }
   else { try{ var keep={}; Object.keys(FIN.docs).forEach(function(k){ if(!FIN.docs[k].derived&&!FIN.docs[k].ledger) keep[k]=FIN.docs[k]; }); localStorage.setItem('aic-fin-local',JSON.stringify({docs:keep,kb:{}})); }catch(e){} }
   ledBuild(cid); ledInject(cid); Promise.all(w).then(function(){ toast('已删除'); render(); }).catch(function(e){ writeFail(e); render(); }); render(); }
-finImp=function(c){ var h='<p class="lead">推荐只导入事务所从 DATEV 导出的<b>全年明细账</b>（Kontoblatt，Excel）：每年一个文件，可以一次选多个。损益表、科目余额、往来、增值税和月度、季度、年度口径都由明细账生成。年中再导一次同一年的文件，会整年覆盖。BWA、科目余额表、增值税预申报表也可以按月导入，有事务所原表的月份以原表为准。文件只在浏览器里读取。</p>';
+finImp=function(c){ var h='<p class="lead">导入事务所从 DATEV 导出的<b>明细账</b>（Kontoblatt，Excel），可以一次选多个文件。<b>单月明细账</b>会追加到当年的账里，只替换这一个月，其他月份不动；<b>全年明细账</b>会整年覆盖，年报做完后用它替换即可。损益表、科目余额、往来、增值税和月度、季度、年度口径都由明细账生成。BWA、科目余额表、增值税预申报表也可以按月导入，有事务所原表的月份以原表为准。文件只在浏览器里读取。</p>';
   if(S.readonly) return h+'<div class="empty">你对这个页面只有查看权限，不能导入。</div>';
   h+='<form class="add" onsubmit="return false"><input id="fin-file" type="file" multiple accept=".xlsx,.xls" aria-label="选择 DATEV 导出的 Excel 文件"></form>';
   if(FIN.busy) h+='<div class="empty">'+esc(FIN.busy)+'</div>'; var lb=ledBusy(c.id); if(lb.length) h+='<div class="empty">正在读取 '+lb.join('、')+' 年的明细账…</div>';
