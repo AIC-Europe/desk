@@ -292,6 +292,20 @@ details.adm>summary{cursor:pointer;font-weight:600;color:var(--muted);padding:6p
 details.adm>summary small{font-weight:400;margin-left:8px}
 details.pay12{margin-top:14px}
 details.pay12>summary{cursor:pointer;color:var(--muted);font-size:13.5px;padding:6px 0}
+.ecards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin:6px 0 4px}
+.ecard{display:block;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 12px;text-decoration:none;color:inherit}
+a.ecard:hover{border-color:var(--gold)}
+.ecard b{display:block;font-size:14px;font-weight:600}
+.ecard small{display:block;color:var(--muted);font-size:12px;line-height:1.45;margin-top:2px}
+.ecard.off{opacity:.7}
+.etag{float:right;font-size:11px;font-weight:400;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 7px;margin-left:6px}
+.entry15{margin:14px 0 4px}
+.wk15 .tbtn .chip:not(.own):not(.warn):not(.gold){display:none}
+.wk15 .racts [data-act="wip"]{display:none}
+.wk15 .tbtn .num.dd{min-width:74px}
+.sub15 a.mini{text-decoration:none;border-radius:999px;padding:5px 11px;font-size:13px}
+.sub15 a.mini[aria-current="page"]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.sub15 a.mini .num{margin-left:4px;opacity:.8}
 #gate{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;overflow:auto;background:linear-gradient(160deg,#103328,#0C2A20)}
 #gate[hidden]{display:none}
 .gbox{width:min(460px,100%);background:#FFFFFF;border-radius:16px;padding:32px 30px 26px;box-shadow:0 30px 70px -20px rgba(0,0,0,.55);color:#1F2A25}
@@ -1842,7 +1856,8 @@ function setImport(obj){ if(!obj||obj.aic!=='settings'||!obj.cfg||typeof obj.cfg
     if(src.cal){ cur=calOf(cid,null); c1=calClean(src.cal); Object.keys(c1).forEach(function(k){ cur[k]=Object.assign({},cur[k],c1[k]); delete cur[k].def; }); cfg.cal=cur; delete cfg.obl; DOCS.cfg[cid]=cfg; hit=true; }
     if(src.calE&&typeof src.calE==='object'){ var ce=clone(cfg.calE); Object.keys(src.calE).forEach(function(nm){ var e=-1; (BYID[cid].reg||[]).forEach(function(r,i){ if(r.name===nm) e=i; }); if(e<0||entsOf(cid)[0]==null) return; cur=calOf(cid,e); c1=calClean(src.calE[nm]); Object.keys(c1).forEach(function(k){ cur[k]=Object.assign({},cur[k],c1[k]); delete cur[k].def; }); ce[e]=cur; hit=true; }); cfg.calE=ce; }
     var FL={daily:'每日',weekly:'每周',monthly:'每月',quarterly:'每季度',halfyear:'每半年',yearly:'每年',batch:'按批次'}, str=function(x,n){ return typeof x==='string'?x.slice(0,n):''; };
-    if(Array.isArray(src.links)){ cfg.links=cfg.links||[]; src.links.slice(0,30).forEach(function(l){ var id=str(l&&l.id,40); if(!/^lk-[a-z0-9-]+$/.test(id)||!str(l.name,40)) return; var ex=cfg.links.filter(function(x){return x.id===id;})[0]; if(ex){ if(!ex.url&&safeUrl(str(l.url,500))){ ex.url=safeUrl(str(l.url,500)); hit=true; } return; } cfg.links.push({id:id,kind:LKK[l.kind]?l.kind:'oth',name:str(l.name,40),url:safeUrl(str(l.url,500)),note:str(l.note,120)}); hit=true; }); }
+    if(Array.isArray(src.links)){ cfg.links=cfg.links||[]; src.links.slice(0,30).forEach(function(l){ var id=str(l&&l.id,40); if(!/^lk-[a-z0-9-]+$/.test(id)||!str(l.name,40)) return; var ex=cfg.links.filter(function(x){return x.id===id;})[0]; if(ex){ if(!ex.url&&safeUrl(str(l.url,500))){ ex.url=safeUrl(str(l.url,500)); hit=true; } if(l.setNote===true&&str(l.note,120)&&ex.note!==str(l.note,120)){ ex.note=str(l.note,120); hit=true; } if(str(l.grp,12)&&ex.grp!==str(l.grp,12)){ ex.grp=str(l.grp,12); hit=true; } return; } cfg.links.push({id:id,kind:LKK[l.kind]?l.kind:'oth',name:str(l.name,40),url:safeUrl(str(l.url,500)),note:str(l.note,120)}); hit=true; }); }
+    if(src.ui&&typeof src.ui==='object'){ var uo=Object.assign({},cfg.ui); ['fin','hr'].forEach(function(k){ if(src.ui[k]==='y'||src.ui[k]==='n'||src.ui[k]==='') uo[k]=src.ui[k]; }); if(JSON.stringify(uo)!==JSON.stringify(cfg.ui||{})){ cfg.ui=uo; hit=true; } }
     if(Array.isArray(src.rmLinks)&&cfg.links){ var nl=cfg.links.filter(function(l){ return src.rmLinks.indexOf(l.id)<0; }); if(nl.length!==cfg.links.length){ cfg.links=nl; hit=true; } }
     if(Array.isArray(src.xt)){ cfg.xt=cfg.xt||[]; var have={}; BYID[cid].tasks.forEach(function(t){ have[t.id]=1; }); src.xt.slice(0,40).forEach(function(t){ var id=str(t&&t.id,60); if(id.indexOf(cid+'-x')!==0||!/^[a-z0-9-]+$/.test(id)||have[id]||!str(t.name,60)||!FL[t.freq]||!CATS[t.cat]) return; have[id]=1;
         cfg.xt.push({id:id,name:str(t.name,60),freq:t.freq,label:FL[t.freq],cat:t.cat,steps:Array.isArray(t.steps)?t.steps.slice(0,12).map(function(x){return str(x,200);}).filter(Boolean):[],info:'',who:'',out:'',log:'',ent:'',when:str(t.when,60),phase:'',due:null,src:'',own:str(t.own,20),sv:'',wd:t.freq==='weekly'&&typeof t.wd==='number'&&t.wd>=0&&t.wd<=6?Math.floor(t.wd):null}); hit=true; }); }
@@ -2174,6 +2189,43 @@ document.addEventListener('click',function(e){
   var a=e.target.closest('[data-act]'); if(a){ var an=a.getAttribute('data-act'); if(v13Act(an,a.getAttribute('data-id'))) return; if(v12Act(an,a.getAttribute('data-id'))) return; if(v11Act(an,a.getAttribute('data-id'))) return; if(v10Act(an,a.getAttribute('data-id'))) return; if(v9Act(an,a.getAttribute('data-id'))) return; if(v8Act(an,a.getAttribute('data-id'))) return; if(v6Act(an,a.getAttribute('data-id'))) return; if(v5Act(an,a.getAttribute('data-id'))) return; if(v3Act(an,a.getAttribute('data-id'))) return; if(an==='fin-ok') return finCommit(); if(an==='fin-cancel'){ FIN.pend=null; return render(); } if(an==='del') delAdhoc(a.getAttribute('data-id')); else { addAdhoc(a.getAttribute('data-c'),a.getAttribute('data-name')); toast('已加入临时待办'); } }
 });
 window.addEventListener('hashchange',function(){ if(route().tab!=='inbox'&&INB.ctl&&INB.busy) INB.ctl.abort(); S.cat=''; S.confirm=''; HRS.edit=''; render(); window.scrollTo(0,0); });
+/* ===== v15: one page per client — 工作 / 期限 / 资料, modules shown only when used ===== */
+var INFO15=['info','svc','today','sop','special','file','open','ltr','inb','rep'], INFO15N={info:'入口与公司信息',svc:'服务设置',today:'全部清单',sop:'SOP',special:'不定期',file:'档案',open:'风险',ltr:'来函',inb:'新任务',rep:'月报'};
+TABS=TABS.map(function(x){ return x[0]==='tax'?['tax','期限']:x[0]==='due'?['due','期限']:x; });
+function ui15(cid){ return ((DOCS.cfg[cid]||{}).ui)||{}; }
+function has15(c,k){ var u=ui15(c.id)[k]; if(u==='y') return true; if(u==='n') return false; if(k==='fin') return finPeriods(c.id).length>0; if(k==='hr') return hrOf(c.id).emps.length>0; return true; }
+function badge15(c,k){ if(k==='open') return riskList(c).filter(function(x){return !isDone(x.id+'.x');}).length; if(k==='inb') return inbOpen(c.id).length; if(k==='ltr') return ((DOCS.ops[c.id]||{}).ltr||[]).filter(function(x){return x.st===LST[0];}).length; return 0; }
+var side14=sideHtml; sideHtml=function(r){ var h=side14(r), td={}; allItems('').forEach(function(it){ if(!it.done&&it.days===0) td[it.cid]=(td[it.cid]||0)+1; });
+  h=h.replace(/(<a class="cli" href="#([a-z0-9_-]+)"(?:(?!<\/a>)[\s\S])*?)<span class="num" title="7 天内到期 \d+ 项">\d+<\/span>/g,function(m,pre,cid){ return pre+(td[cid]?'<span class="num" title="今天到期 '+td[cid]+' 项">'+td[cid]+'</span>':''); });
+  if(!r.cid||!BYID[r.cid]) return h; var c=BYID[r.cid], i=h.indexOf('<div class="subnav">'), j=i<0?-1:h.indexOf('</div>',i); if(i<0||j<0) return h;
+  var grp=r.tab===''?'':(r.tab==='tax'||r.tab==='due')?'tax':r.tab==='fin'?'fin':r.tab==='hr'?'hr':'info', L=[['','工作',0],['tax','期限',taxOpen(c.id)]]; if(has15(c,'fin')||grp==='fin') L.push(['fin','财务',0]); if(has15(c,'hr')||grp==='hr') L.push(['hr','人事',0]); L.push(['info','资料',badge15(c,'inb')+badge15(c,'ltr')]);
+  return h.slice(0,i)+'<div class="subnav">'+L.map(function(x){ return '<a class="sub" href="#'+c.id+(x[0]?'-'+x[0]:'')+'"'+(x[0]===grp?' aria-current="page"':'')+'>'+x[1]+(x[2]?'<span class="num hot">'+x[2]+'</span>':'')+'</a>'; }).join('')+h.slice(j); };
+var EG15=[['记账',/台账|记账|内部账|发票|账务/],['物流',/物流|发货|仓库|运输/],['人事',/报销|休假|工资|工时|打卡|人事|Deel/i]];
+function egrp15(l){ if(l.grp) return l.grp; for(var i=0;i<EG15.length;i++) if(EG15[i][1].test(l.name||'')) return EG15[i][0]; return '其他'; }
+function tip15(s){ s=String(s||'').split(/[；;。\n]/)[0].trim(); return s.length>36?s.slice(0,35)+'…':s; }
+ddLinks=function(c){ if(route().tab!=='') return '';
+  var ls=lkList(c.id).filter(function(l){return l.kind!=='wx';}), dd=ddList(c.id).filter(function(g){return g.url;});
+  if(!ls.length&&!dd.length) return '<div class="filters entry"><span class="who">还没有登记这家客户的系统入口。</span><a class="mini" style="text-decoration:none" href="#'+c.id+'-info">添加入口</a></div>';
+  var card=function(name,url,tip,tag){ var u=safeUrl(url), tg=tag?'<span class="etag">'+esc(tag)+'</span>':''; return u?'<a class="ecard" href="'+esc(u)+'" target="_blank" rel="noopener noreferrer">'+tg+'<b>'+esc(name)+' ↗</b>'+(tip?'<small>'+esc(tip)+'</small>':'')+'</a>':'<span class="ecard off">'+tg+'<b>'+esc(name)+'</b><small>'+esc(tip||'没有网址')+'</small></span>'; };
+  var gs=[]; ls.forEach(function(l){ var g=egrp15(l); if(gs.indexOf(g)<0) gs.push(g); }); var tagOn=ls.length+dd.length>4&&gs.length>1, G={}, ord=[]; ls.forEach(function(l){ var g=egrp15(l); if(!G[g]){ G[g]=[]; ord.push(g); } G[g].push(card(l.name,l.url,tip15(l.note),tagOn?g:'')); }); if(dd.length){ G['钉钉群']=dd.map(function(g){ return card(g.name,g.url,'打开钉钉群',tagOn?'钉钉群':''); }); ord.push('钉钉群'); }
+  return '<div class="entry15"><div class="ecards">'+ord.map(function(g){ return G[g].join(''); }).join('')+'</div></div>'; };
+var work14=viewWork; viewWork=function(c){ if(S.own15===undefined){ S.own15=1; if(S.me&&team().indexOf(S.me)>=0) S.own=S.me; }
+  var B=wkBuckets(c), me=S.me&&team().indexOf(S.me)>=0?S.me:'', opts=(me?[[me,'我的']]:[]).concat([['','全部']]).concat(team().filter(function(n){return n!==me;}).map(function(n){return [n,n];}));
+  var h='<div class="filters" role="group" aria-label="按执行人筛选">'+opts.map(function(o){ return '<button data-own="'+esc(o[0])+'" aria-pressed="'+(S.own===o[0]?'true':'false')+'">'+esc(o[1])+'</button>'; }).join('')+'</div><div class="wk15">';
+  if(B.late.length) h+='<h2>逾期 <small>过了期限还没完成，优先处理</small></h2><ul class="tasks">'+B.late.map(function(i){return wkRow(i,c.id);}).join('')+'</ul>';
+  h+=wkSec('本周要做的','今天和本周内到期',B.today.concat(B.week),c.id,'本周没有要做的工作。');
+  var mo=B.month.filter(function(i){return !i.done;}).length; if(B.month.length) h+='<details class="sec" style="margin-top:14px"><summary><span>本月稍后</span><small><span class="num">'+mo+'</span> 项未完成，共 <span class="num">'+B.month.length+'</span> 项</small></summary><div class="body"><ul class="tasks">'+B.month.map(function(i){return wkRow(i,c.id);}).join('')+'</ul></div></details>';
+  h+='</div>'; var old=work14(c), k=old.indexOf('<h2>临时待办'); if(k>=0) h+=old.slice(k);
+  var rk=badge15(c,'open'); h+='<p class="who" style="margin-top:14px">'+(B.later?'本月之后还有 '+B.later+' 项，见 <a href="#'+c.id+'-tax">期限</a> · ':'')+(rk?'<a href="#'+c.id+'-open">风险台账未结 '+rk+' 项</a> · ':'')+'<a href="#'+c.id+'-today">全部清单</a></p>';
+  return h; };
+function viewTax15(c){ return viewDue(c)+'<details class="sec" style="margin-top:18px"><summary><span>报税节点状态和设置</span><small>每类申报当前这一期、年度事项、适用哪些节点</small></summary><div class="body">'+viewTax(c)+'</div></details>'; }
+function uiForm15(c){ if(S.readonly) return ''; var u=ui15(c.id), o=[['','自动（有数据才显示）'],['y','一直显示'],['n','隐藏']];
+  return '<h2>页面设置 <small>这家客户左侧显示哪些页面；用不上的可以隐藏，数据不会丢</small></h2><form class="add grid2" data-form="ui15"><label>财务页'+sel('fin',o,u.fin||'')+'</label><label>人事页'+sel('hr',o,u.hr||'')+'</label><div class="act"><button type="submit">保存</button></div></form>'; }
+var viewFor14=viewFor; viewFor=function(tab){ if(tab==='tax'||tab==='due') return viewTax15; var f=viewFor14(tab); if(INFO15.indexOf(tab)<0) return f;
+  return function(c){ var nav='<div class="filters sub15" role="navigation" aria-label="资料">'+INFO15.map(function(k){ var n=badge15(c,k); return '<a class="mini" href="#'+c.id+'-'+k+'"'+(k===tab?' aria-current="page"':'')+'>'+INFO15N[k]+(n?'<span class="num">'+n+'</span>':'')+'</a>'; }).join('')+'</div>', h=f(c);
+    if(tab==='file'){ var cut=-1; ['<h2>工商登记信息','<h2>资料卡','<h2>钉钉群'].forEach(function(s){ var p=h.indexOf(s); if(p>=0&&(cut<0||p<cut)) cut=p; }); if(cut>=0) h=h.slice(0,cut)+'<p class="who" style="margin-top:14px">工商登记信息、资料卡和钉钉群在“<a href="#'+c.id+'-info">入口与公司信息</a>”里。</p>'; }
+    if(tab==='info') h+=uiForm15(c); return nav+h; }; };
+var fs14=formSubmit14; formSubmit14=function(name,fv,f){ if(name==='ui15'){ var cid=route().cid, cf=clone(DOCS.cfg[cid]), ok=function(x){ return x==='y'||x==='n'?x:''; }; cf.ui=Object.assign({},cf.ui,{fin:ok(fv.fin),hr:ok(fv.hr)}); toast('已保存页面设置'); return dset('cfg',cid,cf); } return fs14(name,fv,f); };
 init(); initSample(); initMail();
 })();
 </script>
