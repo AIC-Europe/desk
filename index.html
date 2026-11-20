@@ -306,6 +306,7 @@ a.ecard:hover{border-color:var(--gold)}
 .sub15 a.mini{text-decoration:none;border-radius:999px;padding:5px 11px;font-size:13px}
 .sub15 a.mini[aria-current="page"]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
 .sub15 a.mini .num{margin-left:4px;opacity:.8}
+.g17>.row{align-items:center}.g17 .tbtn{flex:1;text-align:left}.g17 .g17n{background:var(--brass-soft,#F2E9D8);font-weight:600}.g17 .g17a{display:flex;gap:6px;flex:none;margin-left:8px}.g17 .mini.sure{background:var(--ink,#14352A);color:#fff;border-color:var(--ink,#14352A)}.tasks.sub17{margin:0 0 8px 34px;border-left:2px solid var(--line,#DDD8CC)}
 #gate{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;overflow:auto;background:linear-gradient(160deg,#103328,#0C2A20)}
 #gate[hidden]{display:none}
 .gbox{width:min(460px,100%);background:#FFFFFF;border-radius:16px;padding:32px 30px 26px;box-shadow:0 30px 70px -20px rgba(0,0,0,.55);color:#1F2A25}
@@ -1410,7 +1411,7 @@ function viewHome(){
   var inb=[]; DATA.forEach(function(c){ inbOpen(c.id).forEach(function(x){ var d=iso2d(x.due), far=!d||Math.round((d-d0(S.now))/864e5)>1, stx=inbSt(x); if(far&&isMine(x.own||'',p)&&!(isLead()&&p===S.me&&(stx==='rev'||stx==='ok'))) inb.push([c.id,x]); }); }); inb.sort(function(a,b){return inbSort(a[1],b[1]);});
   var ad=S.adhoc.filter(function(a){return !a.done&&BYID[a.c];});
   h+='<div class="tiles"><div class="tile'+(urgent.length?' bad':'')+'"><span>紧急</span><b>'+urgent.length+'</b><small>已逾期或今明两天到期</small></div><div class="tile"><span>今天的例行工作</span><b>'+rOpen+'</b><small>共 '+rAll+' 项，已完成 '+(rAll-rOpen)+'</small></div><div class="tile"><span>进行中的新任务</span><b>'+inb.length+'</b><small>来自收件箱</small></div><a class="tile link" href="#deadlines"><span>7 天内到期</span><b>'+items.filter(function(it){return it.days>=0&&it.days<=7&&isMine(itemOwner(it),p);}).length+'</b><small>查看期限总览</small></a></div>';
-  h+='<h2>紧急 <small>已逾期，或今天、明天到期；做完打勾</small></h2>'+(urgent.length?'<ul class="tasks">'+urgent.map(function(it){return dueRow(it,true);}).join('')+'</ul>':'<div class="empty">没有紧急事项。</div>');
+  h+='<h2>紧急 <small>已逾期，或今天、明天到期；做完打勾</small></h2>'+(urgent.length?'<ul class="tasks">'+urgent17(urgent)+'</ul>':'<div class="empty">没有紧急事项。</div>');
   h+='<h2>今天的例行工作 <small>每日任务、今天的每周任务、当前时点的每月及以上任务</small></h2>';
   if(rOpen) routine.forEach(function(g){ if(!g.open.length) return; h+='<div class="who" style="margin:12px 2px 6px"><a href="#'+g.c.id+'">'+esc(g.c.name)+'</a> · 还有 '+g.open.length+' 项</div><ul class="tasks">'+g.open.map(function(t){return taskLi(t,g.c.id,{check:true});}).join('')+'</ul>'; });
   else h+='<div class="empty">'+(rAll?'今天的例行工作都完成了。':'今天没有例行工作。')+'</div>';
@@ -1862,7 +1863,7 @@ function setImport(obj){ if(!obj||obj.aic!=='settings'||!obj.cfg||typeof obj.cfg
     if(Array.isArray(src.xt)){ cfg.xt=cfg.xt||[]; var have={}; BYID[cid].tasks.forEach(function(t){ have[t.id]=1; }); src.xt.slice(0,40).forEach(function(t){ var id=str(t&&t.id,60); if(id.indexOf(cid+'-x')!==0||!/^[a-z0-9-]+$/.test(id)||have[id]||!str(t.name,60)||!FL[t.freq]||!CATS[t.cat]) return; have[id]=1;
         cfg.xt.push({id:id,name:str(t.name,60),freq:t.freq,label:FL[t.freq],cat:t.cat,steps:Array.isArray(t.steps)?t.steps.slice(0,12).map(function(x){return str(x,200);}).filter(Boolean):[],info:'',who:'',out:'',log:'',ent:'',when:str(t.when,60),phase:'',due:null,src:'',own:str(t.own,20),sv:'',wd:t.freq==='weekly'&&typeof t.wd==='number'&&t.wd>=0&&t.wd<=6?Math.floor(t.wd):null}); hit=true; }); }
     if(src.svc&&typeof src.svc==='object'){ cfg.svc=cfg.svc||{}; var ids={}; BYID[cid].tasks.forEach(function(t){ ids[t.id]=1; }); (cfg.xt||[]).forEach(function(t){ ids[t.id]=1; }); Object.keys(cfg.svc).forEach(function(k){ if(cfg.svc[k]&&cfg.svc[k].off) ids[k]=1; }); (BASE||[]).forEach(function(b){ if(b.id===cid) b.tasks.forEach(function(t){ ids[t.id]=1; }); }); ((DOCS.base||{})[cid]&&(DOCS.base[cid].tasks||[])||[]).forEach(function(t){ ids[t.id]=1; });
-      Object.keys(src.svc).forEach(function(tid){ var v=src.svc[tid]; if(!ids[tid]||!v||typeof v!=='object') return; var sx=cfg.svc[tid]=cfg.svc[tid]||{}; if(str(v.own,20)) sx.own=str(v.own,20); if(str(v.lk,40)&&(cfg.links||[]).some(function(x){return x.id===v.lk;})) sx.lk=v.lk; if(typeof v.off==='boolean'){ if(v.off) sx.off=true; else delete sx.off; } hit=true; }); }
+      Object.keys(src.svc).forEach(function(tid){ var v=src.svc[tid]; if(!ids[tid]||!v||typeof v!=='object') return; var sx=cfg.svc[tid]=cfg.svc[tid]||{}; if(str(v.own,20)) sx.own=str(v.own,20); if(str(v.lk,40)&&(cfg.links||[]).some(function(x){return x.id===v.lk;})) sx.lk=v.lk; if(v.dueDay!=null){ var dv16=parseInt(v.dueDay,10); if(dv16>=1&&dv16<=31) sx.dueDay=dv16; } if(typeof v.off==='boolean'){ if(v.off) sx.off=true; else delete sx.off; } hit=true; }); }
     if(src.hr&&Array.isArray(src.hr.emps)){ var A=window.AIC; if(A&&A.hrLocked&&A.hrLocked()) hrSkip=true; else { var hh=hrOf(cid), added=0, dt=function(x){ return iso2d(x)?x:''; }, nb=function(x){ return x===''||x==null||isNaN(+x)?'':String(+x); };
         src.hr.emps.slice(0,200).forEach(function(e){ var nm=str(e&&e.name,60), ex=nm&&hh.emps.filter(function(x){ return x.name===nm; })[0]; if(ex&&src.hr.update===true){ var ch=false, put=function(k,v){ if(e[k]!==undefined&&ex[k]!==v){ ex[k]=v; ch=true; } }; put('role',str(e.role,80)); put('start',dt(e.start)); put('end',dt(e.end)); put('probe',dt(e.probe)); put('permit',dt(e.permit)); put('gross',nb(e.gross)); put('vac',nb(e.vac)); put('left',dt(e.left)); put('note',str(e.note,200)); if(ch) added++; return; } if(!nm||ex) return; hh.emps.push({id:rid()+added,name:nm,role:str(e.role,80),start:dt(e.start),end:dt(e.end),probe:dt(e.probe),permit:dt(e.permit),gross:nb(e.gross),vac:nb(e.vac),left:dt(e.left),note:str(e.note,200),drive:safeUrl(str(e.drive,500))}); added++; });
         if(added){ dset('hr',cid,hh); nEmp+=added; if(!hit) n++; } } }
@@ -2249,6 +2250,20 @@ var viewFor14=viewFor; viewFor=function(tab){ if(tab==='tax'||tab==='due') retur
     if(tab==='file'){ var cut=-1; ['<h2>工商登记信息','<h2>资料卡','<h2>钉钉群'].forEach(function(s){ var p=h.indexOf(s); if(p>=0&&(cut<0||p<cut)) cut=p; }); if(cut>=0) h=h.slice(0,cut)+'<p class="who" style="margin-top:14px">工商登记信息、资料卡和钉钉群在“<a href="#'+c.id+'-info">入口与公司信息</a>”里。</p>'; }
     if(tab==='info') h+=uiForm15(c); return nav+h; }; };
 var fs14=formSubmit14; formSubmit14=function(name,fv,f){ if(name==='ui15'){ var cid=route().cid, cf=clone(DOCS.cfg[cid]), ok=function(x){ return x==='y'||x==='n'?x:''; }; cf.ui=Object.assign({},cf.ui,{fin:ok(fv.fin),hr:ok(fv.hr)}); toast('已保存页面设置'); return dset('cfg',cid,cf); } return fs14(name,fv,f); };
+/* ===== v17: home "紧急" — the same piece of work due on the same day for several companies folds into one row ===== */
+function g17Title(it){ return String(it.title).replace(/（[^（）]*）/g,'').replace(/\s+/g,' ').trim(); }
+function g17Key(it){ return it.due+'|'+g17Title(it)+'|'+(itemOwner(it)||'')+'|'+it.type; }
+function g17Plain(it){ return !it.inb&&!it.ltr&&!it.done&&!stOf(it.k); }
+function urgent17(list){ var G={}, order=[]; list.forEach(function(it){ var k=g17Plain(it)?g17Key(it):'_'+order.length; if(!G[k]){ G[k]=[]; order.push(k); } G[k].push(it); });
+  return order.map(function(k){ var a=G[k]; if(a.length<3) return a.map(function(it){ return dueRow(it,true); }).join('');
+    var it=a[0], open=!!(S.g17||{})[k], cl={}, sure=S.g17c===k; a.forEach(function(x){ cl[x.cid]=1; }); var nc=Object.keys(cl).length;
+    return '<li class="g17"><div class="row"><button type="button" class="tbtn" data-act="g17" data-id="'+esc(k)+'" aria-expanded="'+(open?'true':'false')+'"><span class="num dd">'+fmtD(it.due)+'</span>'+dueChip(it)+'<span class="t">'+esc(g17Title(it))+'</span><span class="chip g17n">'+a.length+' 项'+(nc>1?' · '+nc+' 家客户':'')+'</span><span class="chip">'+DTYPE[it.type]+'</span>'+(itemOwner(it)?'<span class="chip own">'+esc(itemOwner(it))+'</span>':'')+'</button><span class="g17a">'+(S.readonly?'':'<button type="button" class="mini'+(sure?' sure':'')+'" data-act="g17all" data-id="'+esc(k)+'">'+(sure?'确认：'+a.length+' 项都做完了':'全部完成')+'</button>')+'</span></div>'+(open?'<ul class="tasks sub17">'+a.map(function(x){ return dueRow(x,true); }).join('')+'</ul>':'')+'</li>'; }).join(''); }
+var v10Act16=v10Act; v10Act=function(an,id){
+  if(an==='g17'){ S.g17=S.g17||{}; S.g17[id]=!S.g17[id]; S.g17c=''; render(); return true; }
+  if(an==='g17all'){ if(S.readonly) return true; if(S.g17c!==id){ S.g17c=id; render(); return true; } S.g17c='';
+    var p=S.hview==null?S.me:S.hview, a=allItems('').filter(function(it){ return it.days<=1&&isMine(itemOwner(it),p)&&g17Plain(it)&&g17Key(it)===id; });
+    a.forEach(function(it){ toggle(it.k,it.cid,it.p); }); toast('已勾选 '+a.length+' 项'); render(); return true; }
+  return v10Act16(an,id); };
 init(); initSample(); initMail();
 })();
 </script>
