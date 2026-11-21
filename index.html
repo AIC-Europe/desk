@@ -307,6 +307,45 @@ a.ecard:hover{border-color:var(--gold)}
 .sub15 a.mini[aria-current="page"]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
 .sub15 a.mini .num{margin-left:4px;opacity:.8}
 .g17>.row{align-items:center}.g17 .tbtn{flex:1;text-align:left}.g17 .g17n{background:var(--brass-soft,#F2E9D8);font-weight:600}.g17 .g17a{display:flex;gap:6px;flex:none;margin-left:8px}.g17 .mini.sure{background:var(--ink,#14352A);color:#fff;border-color:var(--ink,#14352A)}.tasks.sub17{margin:0 0 8px 34px;border-left:2px solid var(--line,#DDD8CC)}
+
+.mbar,.msub{display:none}
+@media (max-width:900px){
+  .side{position:sticky;top:0;z-index:40;padding:0;gap:0;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+  .side>.brand,.side>nav,.side>.grp,.side>.foot{display:none}
+  .mbar{display:flex;align-items:center;gap:10px;padding:8px 12px;min-height:52px}
+  .mbar .mark{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:1px solid var(--gold);color:var(--gold);font-size:17px}
+  .mb-home{text-decoration:none;flex:none}
+  .mb-here{flex:1;min-width:0;color:var(--side-text);font-weight:700;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mb-btn{flex:none;min-height:40px;padding:6px 16px;border-radius:999px;border:1px solid var(--side-on);background:transparent;color:var(--side-text);font:inherit;font-size:15px;font-weight:600}
+  .msub{display:flex;gap:6px;overflow-x:auto;padding:0 12px 10px;scrollbar-width:none}
+  .msub::-webkit-scrollbar{display:none}
+  .msub a{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:38px;padding:6px 14px;border-radius:999px;color:var(--side-muted);text-decoration:none;font-size:15px;border:1px solid transparent;white-space:nowrap}
+  .msub a[aria-current="page"]{background:var(--side-on);color:var(--side-text);font-weight:700}
+  .side.mopen{max-height:100vh;max-height:100dvh;overflow-y:auto;overscroll-behavior:contain}
+  .side.mopen>nav{display:flex;flex-direction:column;overflow:visible;padding:4px 10px 8px}
+  .side.mopen>nav a{white-space:normal;border-bottom:0;min-height:46px;display:flex;align-items:center;justify-content:space-between;font-size:16px}
+  .side.mopen>nav a[aria-current="page"]{border-bottom-color:transparent;background:var(--side-on);border-radius:10px}
+  .side.mopen>.grp{display:block;padding:10px 22px 2px}
+  .side.mopen>.foot{display:block;padding:12px 22px 20px}
+  .side.mopen .subnav{margin-left:14px}
+  .side.mopen .msub{display:none}
+  .wrap{padding:0 14px 64px}
+  #app table{display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #app input[type="text"],#app input[type="number"],#app input[type="date"],#app input[type="search"],#app input:not([type]),#app select,#app textarea{font-size:16px}
+  #app input[type="checkbox"]{width:22px;height:22px;flex:none}
+  .tasks .row{flex-wrap:wrap;row-gap:6px}
+  .tasks .row>.mini,.tasks .row>.mini.go,.row>.mini.go{margin-left:0}
+  .mini{min-height:36px}
+  .filters button,.filters a.mini{min-height:38px}
+  .tasks .row>.tbtn{flex:1 1 calc(100% - 44px);min-width:0}
+  .tasks .row>.mini.go,.tasks .row>.acts,.tasks .row>.mini{margin-left:34px}
+  .g17 .tbtn{flex:1 1 100%}
+  .g17 .g17a{margin-left:0}
+  .tasks.sub17{margin-left:10px}
+  .tiles{grid-template-columns:1fr 1fr}
+  form.add{flex-wrap:wrap}
+  form.add>label,form.add.grid2>label{flex:1 1 100%}
+}
 #gate{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;overflow:auto;background:linear-gradient(160deg,#103328,#0C2A20)}
 #gate[hidden]{display:none}
 .gbox{width:min(460px,100%);background:#FFFFFF;border-radius:16px;padding:32px 30px 26px;box-shadow:0 30px 70px -20px rgba(0,0,0,.55);color:#1F2A25}
@@ -2264,6 +2303,15 @@ var v10Act16=v10Act; v10Act=function(an,id){
     var p=S.hview==null?S.me:S.hview, a=allItems('').filter(function(it){ return it.days<=1&&isMine(itemOwner(it),p)&&g17Plain(it)&&g17Key(it)===id; });
     a.forEach(function(it){ toggle(it.k,it.cid,it.p); }); toast('已勾选 '+a.length+' 项'); render(); return true; }
   return v10Act16(an,id); };
+/* ===== v18: phone layout — one slim sticky bar (where am I + menu button), the current client's pages as a tab row under it, the full navigation behind the menu button ===== */
+var side17=sideHtml; sideHtml=function(r){ var h=side17(r), here='今日工作', sub='';
+  if(r.cid&&BYID[r.cid]){ here=BYID[r.cid].name; var i=h.indexOf('<div class="subnav">'), j=i<0?-1:h.indexOf('</div>',i); if(i>=0&&j>=0) sub='<div class="msub" role="navigation" aria-label="'+esc(here)+' 的页面">'+h.slice(i+20,j).replace(/<button[\s\S]*?<\/button>/g,'')+'</div>'; }
+  else if(r.tab==='due') here='期限总览'; else if(r.tab==='inbox') here='新任务收件箱';
+  return '<div class="mbar"><a class="mb-home" href="#home" aria-label="回到今日工作"><span class="mark" aria-hidden="true">启</span></a><span class="mb-here">'+esc(here)+'</span><button type="button" class="mb-btn" data-act="mnav" aria-expanded="'+(S.mnav?'true':'false')+'" aria-controls="side">'+(S.mnav?'收起':'菜单')+'</button></div>'+sub+h; };
+function mnav18(on){ S.mnav=!!on; var s=document.getElementById('side'); if(s) s.classList.toggle('mopen',S.mnav); }
+var v10Act17=v10Act; v10Act=function(an,id){ if(an==='mnav'){ mnav18(!S.mnav); render(); return true; } return v10Act17(an,id); };
+window.addEventListener('hashchange',function(){ if(S.mnav) mnav18(false); });
+document.addEventListener('click',function(e){ if(S.mnav&&e.target.closest&&e.target.closest('#side nav a')){ mnav18(false); } });
 init(); initSample(); initMail();
 })();
 </script>
