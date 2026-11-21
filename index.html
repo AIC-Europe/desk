@@ -346,6 +346,27 @@ a.ecard:hover{border-color:var(--gold)}
   form.add{flex-wrap:wrap}
   form.add>label,form.add.grid2>label{flex:1 1 100%}
 }
+
+button.tile{font:inherit;text-align:left;cursor:pointer;width:100%;color:inherit;-webkit-appearance:none;appearance:none}
+#app h2{scroll-margin-top:16px}
+.side nav a .num.hot{background:#C8643C;color:#fff}
+.side nav a .num:not(.hot){background:transparent;color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+@media (max-width:900px){
+  #app>h1,#app>p.lead,#app>p.sub,#app>.crumb{display:none}
+  .top{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:10px;padding:8px 0 6px;margin:0 0 10px;font-size:12.5px}
+  .top .today{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1 1 0;width:auto}
+  .top .today b{font-size:13px}
+  .top .status{flex:0 1 auto;width:auto;max-width:38vw;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0;padding:0}
+  .top .status span{display:inline-block;max-width:calc(38vw - 16px);overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+  #app>.note{padding:8px 12px;margin-bottom:12px;font-size:13.5px}
+  #app>.note p{margin:0}
+  #app>.note .mini{min-height:30px;margin-top:6px}
+  #app>.filters:first-of-type{margin-top:2px}
+  .tiles{gap:8px}
+  .tile{padding:10px 12px}
+  .tile b{font-size:22px}
+  #app h2{scroll-margin-top:118px}
+}
 #gate{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;overflow:auto;background:linear-gradient(160deg,#103328,#0C2A20)}
 #gate[hidden]{display:none}
 .gbox{width:min(460px,100%);background:#FFFFFF;border-radius:16px;padding:32px 30px 26px;box-shadow:0 30px 70px -20px rgba(0,0,0,.55);color:#1F2A25}
@@ -2176,6 +2197,7 @@ function backupBy(){ var b=(DOCS.cfg._team||{}).backupBy; return team().indexOf(
 function backupDue(){ var last=(DOCS.cfg._backup||{}).t||0, n=d0(S.now), fri=new Date(n); fri.setDate(n.getDate()-((n.getDay()+2)%7)); return {last:last,fri:fri,due:!last||last<fri.getTime(),late:n>fri,days:last?Math.floor((Date.now()-last)/864e5):-1}; }
 var viewHome14b=viewHome;
 viewHome=function(){ var h=viewHome14b(), A=window.AIC; if(!A||!A.backup) return h; var who=backupBy(), b=backupDue(), btn=' <button type="button" class="mini" data-act="backup">导出备份</button>', box=function(t){ return '<div class="note" style="margin-bottom:16px"><p>'+t+'</p></div>'; }, lastTxt=b.days<0?'工作台的数据还没有备份过。':'上次备份是 '+b.days+' 天前'+((DOCS.cfg._backup||{}).by?'（'+esc(DOCS.cfg._backup.by)+'）':'')+'。';
+  if(b.days>=0&&b.days<7) return h; /* v19 一周内有人备份过：首页不再置顶提醒 */
   if(who){ if(!b.due) return h;
     if(S.me===who) return box('<b>每周五的工作台备份该做了。</b>'+lastTxt+'点右边的按钮导出，把下载的文件存到钉钉云盘。'+btn)+h;
     if(isLead()&&b.late) return box('<b>'+esc(who)+' 本周五的工作台备份还没有做。</b>'+lastTxt+'可以提醒一下，或者自己导出。'+btn)+h;
@@ -2312,6 +2334,9 @@ function mnav18(on){ S.mnav=!!on; var s=document.getElementById('side'); if(s) s
 var v10Act17=v10Act; v10Act=function(an,id){ if(an==='mnav'){ mnav18(!S.mnav); render(); return true; } return v10Act17(an,id); };
 window.addEventListener('hashchange',function(){ if(S.mnav) mnav18(false); });
 document.addEventListener('click',function(e){ if(S.mnav&&e.target.closest&&e.target.closest('#side nav a')){ mnav18(false); } });
+/* ===== v19: home tiles jump to their lists ===== */
+var viewHome18=viewHome; viewHome=function(){ return viewHome18().replace(/<div class="tile( bad)?"><span>(紧急|今天的例行工作|等我复核|进行中的新任务)<\/span>([\s\S]*?)<\/div>/g,function(m,bad,k,rest){ return '<button type="button" class="tile'+(bad||'')+' link" data-act="jump19" data-id="'+k+'"><span>'+k+'</span>'+rest+'</button>'; }); };
+var v10Act18=v10Act; v10Act=function(an,id){ if(an==='jump19'){ var key=id==='进行中的新任务'?'进行中的任务':id, hs=document.querySelectorAll('#app h2'), i; for(i=0;i<hs.length;i++){ if((hs[i].textContent||'').replace(/^\s+/,'').indexOf(key)===0){ try{ hs[i].scrollIntoView({behavior:(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)?'auto':'smooth',block:'start'}); }catch(e){ hs[i].scrollIntoView(); } break; } } return true; } return v10Act18(an,id); };
 init(); initSample(); initMail();
 })();
 </script>
